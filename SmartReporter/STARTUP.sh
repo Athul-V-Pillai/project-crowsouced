@@ -1,0 +1,51 @@
+#!/bin/bash
+# SmartReporter - Startup Script
+# Run all three services at once
+
+echo "================================"
+echo "SmartReporter - Startup Script"
+echo "================================"
+echo ""
+echo "This script will guide you through starting all services."
+echo ""
+echo "REQUIREMENTS:"
+echo "- MongoDB running (mongod or local service)"
+echo "- Node.js 18+ installed"
+echo "- Python 3.8+ installed"
+echo ""
+
+# Check if MongoDB is running
+echo "Checking MongoDB..."
+if ! command -v mongod &> /dev/null; then
+    echo "⚠️  MongoDB not found. Start it separately:"
+    echo "   Windows: net start MongoDB"
+    echo "   macOS: brew services start mongodb-community"
+    echo "   Linux: sudo systemctl start mongod"
+fi
+
+echo ""
+echo "START SERVICES IN SEPARATE TERMINALS:"
+echo ""
+echo "TERMINAL 1 - Backend (Express API):"
+echo "  cd backend"
+echo "  npm install"
+echo "  npm run dev"
+echo ""
+echo "TERMINAL 2 - AI Service (Flask):"
+echo "  cd ai-service"
+echo "  python -m venv venv"
+echo "  source venv/bin/activate  (or: venv\\Scripts\\activate on Windows)"
+echo "  pip install -r requirements.txt"
+echo "  python run.py"
+echo ""
+echo "TERMINAL 3 - Frontend (React):"
+echo "  cd frontend"
+echo "  npm install"
+echo "  npm start"
+echo ""
+echo "================================"
+echo "Services will run on:"
+echo "- Frontend: http://localhost:3000"
+echo "- Backend: http://localhost:5000"
+echo "- AI Service: http://localhost:5001"
+echo "================================"

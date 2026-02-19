@@ -1,0 +1,7 @@
+# SmartReporter AI Service
+# Python Flask API for image classification using YOLO
+
+from app.routes import app
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5001)
