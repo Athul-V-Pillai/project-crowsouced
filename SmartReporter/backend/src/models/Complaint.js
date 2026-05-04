@@ -31,6 +31,14 @@ const complaintSchema = new mongoose.Schema(
       max: 1,
       default: null
     },
+    mlImage: {
+      type: String,
+      default: null
+    },
+    mlResult: {
+      type: String,
+      default: null
+    },
     location: {
       type: {
         type: String,
@@ -72,6 +80,14 @@ const complaintSchema = new mongoose.Schema(
     resolutionNote: {
       type: String,
       default: null
+    },
+    deletedByUser: {
+      type: Boolean,
+      default: false
+    },
+    archivedByAdmin: {
+      type: Boolean,
+      default: false
     }
   },
   { timestamps: true }

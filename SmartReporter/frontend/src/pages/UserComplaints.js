@@ -134,16 +134,14 @@ export const UserComplaints = () => {
                         <span className="hidden sm:inline">Edit</span>
                       </button>
                     )}
-                    {complaint.status === 'pending' && (
-                      <button
-                        onClick={() => handleDeleteClick(complaint._id)}
-                        className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
-                        title="Delete complaint"
-                      >
-                        <FiTrash2 size={18} />
-                        <span className="hidden sm:inline">Delete</span>
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleDeleteClick(complaint._id)}
+                      className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+                      title="Delete complaint"
+                    >
+                      <FiTrash2 size={18} />
+                      <span className="hidden sm:inline">Delete</span>
+                    </button>
                   </div>
                 </div>
 

@@ -232,9 +232,12 @@ exports.suspendUser = async (req, res, next) => {
     const { userId } = req.params;
     const { reason } = req.body;
 
+    // Set suspension to expire in 24 hours
+    const suspensionExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
     const user = await User.findByIdAndUpdate(
       userId,
-      { status: "suspended", bannedReason: reason, bannedAt: new Date() },
+      { status: "suspended", bannedReason: reason, bannedAt: new Date(), suspensionExpiresAt },
       { new: true }
     ).select("-password");
 
@@ -247,7 +250,7 @@ exports.suspendUser = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "User suspended successfully",
+      message: "User suspended successfully for 24 hours",
       user
     });
   } catch (error) {
@@ -293,11 +296,21 @@ exports.unsuspendUser = async (req, res, next) => {
 exports.deleteComplaint = async (req, res, next) => {
   try {
     const { complaintId } = req.params;
-    const complaint = await Complaint.findByIdAndDelete(complaintId);
+    const complaint = await Complaint.findById(complaintId);
+    
     if (!complaint) {
       return res.status(404).json({ success: false, message: "Complaint not found" });
     }
-    res.status(200).json({ success: true, message: "Complaint deleted successfully" });
+
+    // If user already deleted it, permanently delete from database
+    if (complaint.deletedByUser) {
+      await Complaint.findByIdAndDelete(complaintId);
+      return res.status(200).json({ success: true, message: "Complaint permanently deleted" });
+    }
+
+    // Otherwise just archive it
+    await Complaint.findByIdAndUpdate(complaintId, { archivedByAdmin: true }, { new: true });
+    res.status(200).json({ success: true, message: "Complaint archived successfully" });
   } catch (error) {
     res.status(500).json({ success: false, message: "Failed to delete complaint", error: error.message });
   }

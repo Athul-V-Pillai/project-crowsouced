@@ -2,6 +2,21 @@ import React, { useState, useEffect } from "react";
 import { getAllUsers, updateUser, deleteUser, banUser, suspendUser, unsuspendUser } from "../services/api";
 import { toast } from "react-toastify";
 
+// Calculate remaining suspension time
+const getRemainingTime = (expiresAt) => {
+  if (!expiresAt) return null;
+  const now = new Date();
+  const expiry = new Date(expiresAt);
+  const diff = expiry - now;
+  
+  if (diff <= 0) return null; // Expired
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  
+  return `${hours}h ${minutes}m`;
+};
+
 export const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -137,13 +152,20 @@ export const UserManagement = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      user.status === "active" ? "bg-green-100 text-green-800" :
-                      user.status === "banned" ? "bg-red-100 text-red-800" :
-                      "bg-yellow-100 text-yellow-800"
-                    }`}>
-                      {user.status}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold w-fit ${
+                        user.status === "active" ? "bg-green-100 text-green-800" :
+                        user.status === "banned" ? "bg-red-100 text-red-800" :
+                        "bg-yellow-100 text-yellow-800"
+                      }`}>
+                        {user.status}
+                      </span>
+                      {user.status === "suspended" && user.suspensionExpiresAt && (
+                        <span className="text-xs text-gray-600">
+                          Expires: {getRemainingTime(user.suspensionExpiresAt)}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4">{user.phone || "N/A"}</td>
                   <td className="px-6 py-4 flex gap-2 justify-center">

@@ -8,7 +8,8 @@ const {
   updateComplaint,
   upvoteComplaint,
   getMyComplaints,
-  sendAppreciationEmail
+  sendAppreciationEmail,
+  deleteComplaint
 } = require('../controllers/complaintController');
 const { verifyToken, isAdmin } = require('../middleware/auth');
 
@@ -20,6 +21,7 @@ router.post('/submit', verifyToken, submitComplaint);
 router.post('/upvote', verifyToken, upvoteComplaint);
 router.get('/my-complaints', verifyToken, getMyComplaints);
 router.put('/:id', verifyToken, updateComplaint);
+router.delete('/:id', verifyToken, deleteComplaint);
 
 // Public/Protected mixed routes
 router.get('/:id', getComplaintById);

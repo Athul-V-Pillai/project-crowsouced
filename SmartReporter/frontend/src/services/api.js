@@ -42,7 +42,8 @@ export const deleteUser = (userId) => API.delete("/admin/users/" + userId);
 export const banUser = (userId, data) => API.post("/admin/users/" + userId + "/ban", data);
 export const suspendUser = (userId, data) => API.post("/admin/users/" + userId + "/suspend", data);
 export const unsuspendUser = (userId) => API.post("/admin/users/" + userId + "/unsuspend");
-export const deleteComplaint = (complaintId) => API.delete("/admin/complaints/" + complaintId);
+export const deleteComplaint = (complaintId) => API.delete("/complaints/" + complaintId);
+export const deleteComplaintAdmin = (complaintId) => API.delete("/admin/complaints/" + complaintId);
 
 export const updateMyComplaint = (complaintId, data) => API.put('/complaints/' + complaintId, data);
 

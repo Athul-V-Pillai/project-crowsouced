@@ -1,18 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDashboardStats, getComplaints, updateComplaintStatus, getAllUsers, deleteComplaint, sendAppreciationEmail } from '../services/api';
+import { getDashboardStats, getComplaints, updateComplaintStatus, getAllUsers, deleteComplaintAdmin } from '../services/api';
 import { toast } from 'react-toastify';
 import { FiBarChart2, FiCheckCircle, FiClock, FiAlertCircle } from 'react-icons/fi';
+
+// Calculate priority based on upvotes
+const getPriorityFromUpvotes = (upvotes) => {
+  if (upvotes >= 10) return { priority: 'high', color: 'bg-red-500', label: 'High' };
+  if (upvotes >= 5) return { priority: 'medium', color: 'bg-yellow-500', label: 'Medium' };
+  return { priority: 'low', color: 'bg-green-500', label: 'Low' };
+};
 
 export const AdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [complaints, setComplaints] = useState([]);
+  const [allComplaints, setAllComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedComplaint, setSelectedComplaint] = useState(null);
   const [updateData, setUpdateData] = useState({ status: '', priority: '', resolutionNote: '' });
   const [showImageModal, setShowImageModal] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [sortBy, setSortBy] = useState('upvotes');
+  const [showSortMenu, setShowSortMenu] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -28,7 +38,11 @@ export const AdminDashboard = () => {
       ]);
 
       setStats(statsRes.data.stats);
-      setComplaints(complaintsRes.data.complaints);
+      setAllComplaints(complaintsRes.data.complaints);
+      // Sort complaints by upvotes (highest first)
+      const sortedComplaints = complaintsRes.data.complaints.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+      setComplaints(sortedComplaints);
+      setSortBy('upvotes');
     } catch (error) {
       toast.error('Failed to fetch dashboard data');
     } finally {
@@ -50,7 +64,7 @@ export const AdminDashboard = () => {
   const handleDeleteComplaint = async (complaintId) => {
     if (window.confirm('Are you sure you want to delete this complaint?')) {
       try {
-        await deleteComplaint(complaintId);
+        await deleteComplaintAdmin(complaintId);
         toast.success('Complaint deleted successfully');
         fetchData();
       } catch (error) {
@@ -59,14 +73,19 @@ export const AdminDashboard = () => {
     }
   };
 
-  const handleSendAppreciation = async (complaintId) => {
-    try {
-      const response = await sendAppreciationEmail(complaintId);
-      toast.success(response.data.message || 'Appreciation email sent successfully');
-      fetchData(); // Refresh the list
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to send appreciation email');
+  const handleSort = (sortType) => {
+    setSortBy(sortType);
+    let sorted = [...allComplaints];
+    
+    if (sortType === 'upvotes') {
+      sorted.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0));
+    } else if (sortType === 'recent') {
+      sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (sortType === 'oldest') {
+      sorted.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     }
+    
+    setComplaints(sorted);
   };
 
   if (loading) {
@@ -126,7 +145,48 @@ export const AdminDashboard = () => {
         {/* Complaints Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-800">Recent Complaints</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-gray-800">Recent Complaints</h2>
+              <div className="relative">
+                <button
+                  onClick={() => setShowSortMenu(!showSortMenu)}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+                >
+                  Sort Complaints
+                </button>
+                {showSortMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+                    <button
+                      onClick={() => {
+                        handleSort('upvotes');
+                        setShowSortMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 font-semibold text-gray-800"
+                    >
+                      High Upvotes
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleSort('recent');
+                        setShowSortMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 font-semibold text-gray-800 border-t border-gray-200"
+                    >
+                      Recent Complaints
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleSort('oldest');
+                        setShowSortMenu(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100 font-semibold text-gray-800 border-t border-gray-200"
+                    >
+                      Oldest Complaints
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -138,6 +198,7 @@ export const AdminDashboard = () => {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Priority</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">User</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Upvotes</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Action</th>
                 </tr>
               </thead>
@@ -157,6 +218,17 @@ export const AdminDashboard = () => {
                     </td>
                     <td className="px-6 py-3 text-sm font-semibold text-gray-800">{complaint.priority}</td>
                     <td className="px-6 py-3 text-sm text-gray-600">{complaint.userId?.name}</td>
+                    <td className="px-6 py-3 text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold">
+                          {complaint.upvotes || 0}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <div className={`w-3 h-3 rounded-full ${getPriorityFromUpvotes(complaint.upvotes || 0).color}`}></div>
+                          <span className="text-xs text-gray-600 font-medium">{getPriorityFromUpvotes(complaint.upvotes || 0).label}</span>
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-6 py-3 text-sm">
                       <button
                         onClick={() => {
@@ -189,13 +261,6 @@ export const AdminDashboard = () => {
                           Location
                         </button>
                       )}
-                      <button
-                        onClick={() => handleSendAppreciation(complaint._id)}
-                        className="text-green-600 hover:text-green-800 font-semibold mr-2"
-                        title="Send appreciation email"
-                      >
-                        Send Appreciation
-                      </button>
                       <button
                         onClick={() => handleDeleteComplaint(complaint._id)}
                         className="text-red-600 hover:text-red-800 font-semibold"
@@ -267,24 +332,54 @@ export const AdminDashboard = () => {
         {/* Image Modal */}
         {showImageModal && selectedComplaint && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl max-h-96 overflow-y-auto">
-              <h2 className="text-2xl font-bold mb-4">Complaint Images</h2>
-              {selectedComplaint.imageUrl && (
-                <div className="space-y-4">
-                  <img
-                    src={selectedComplaint.imageUrl}
-                    alt="Complaint"
-                    className="w-full h-96 object-contain rounded-lg border border-gray-300"
-                  />
-                  <p className="text-gray-600 text-sm">Image URL: {selectedComplaint.imageUrl}</p>
+            <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+              <h2 className="text-2xl font-bold mb-6">Complaint Images & ML Analysis</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Original Image */}
+                {selectedComplaint.imageUrl && (
+                  <div className="space-y-3">
+                    <h3 className="text-xl font-semibold text-gray-700">Uploaded Image</h3>
+                    <img
+                      src={selectedComplaint.imageUrl}
+                      alt="Original Complaint"
+                      className="w-full h-80 object-contain rounded-lg border border-gray-300"
+                    />
+                    <p className="text-gray-600 text-xs break-words">Original: {selectedComplaint.imageUrl}</p>
+                  </div>
+                )}
+
+                {/* ML Processed Image */}
+                {selectedComplaint.mlImage ? (
+                  <div className="space-y-3">
+                    <h3 className="text-xl font-semibold text-gray-700">ML Processed Image</h3>
+                    <img
+                      src={selectedComplaint.mlImage}
+                      alt="ML Processed"
+                      className="w-full h-80 object-contain rounded-lg border border-blue-300 bg-blue-50"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-80 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
+                    <p className="text-gray-500 text-center">No ML processed image available</p>
+                  </div>
+                )}
+              </div>
+
+              {/* ML Result Text */}
+              {selectedComplaint.mlResult && (
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="text-lg font-semibold text-gray-700 mb-2">ML Analysis Result</h3>
+                  <p className="text-gray-800 whitespace-pre-wrap break-words">{selectedComplaint.mlResult}</p>
                 </div>
               )}
+
               <div className="flex gap-2 mt-6">
                 <button
                   onClick={() => setShowImageModal(false)}
                   className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition"
                 >
-                  Close
+                  Back
                 </button>
               </div>
             </div>

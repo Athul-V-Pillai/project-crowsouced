@@ -20,6 +20,41 @@ exports.submitComplaint = async (req, res, next) => {
       });
     }
 
+    // Check if user is banned or suspended
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    if (user.status === 'banned') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been banned and you cannot submit complaints. Reason: ' + (user.bannedReason || 'No reason provided')
+      });
+    }
+
+    // Check if suspension has expired - auto-unsuspend
+    if (user.status === 'suspended') {
+      if (user.suspensionExpiresAt && new Date() >= new Date(user.suspensionExpiresAt)) {
+        // Suspension expired, auto-unsuspend
+        user.status = 'active';
+        user.suspensionExpiresAt = null;
+        user.bannedReason = null;
+        user.bannedAt = null;
+        await user.save();
+      } else {
+        // Still suspended
+        const remainingTime = user.suspensionExpiresAt ? Math.ceil((new Date(user.suspensionExpiresAt) - new Date()) / 1000 / 60) : 0; // in minutes
+        return res.status(403).json({
+          success: false,
+          message: `Your account has been suspended and you cannot submit complaints. Reason: ${user.bannedReason || 'No reason provided'}. Remaining suspension time: ${Math.floor(remainingTime / 60)}h ${remainingTime % 60}m`
+        });
+      }
+    }
+
     // Upload image to Cloudinary
     if (!req.files || !req.files.image) {
       return res.status(400).json({
@@ -38,6 +73,47 @@ exports.submitComplaint = async (req, res, next) => {
         message: 'Failed to upload image',
         error: uploadError.message
       });
+    }
+
+    // Call ML API to process image and get result text
+    let mlImage = null;
+    let mlResult = null;
+
+    try {
+      // Download image from Cloudinary
+      const imageResponse = await axios.get(imageUrl, {
+        responseType: 'arraybuffer',
+        timeout: 10000
+      });
+
+      // Create FormData with the image file
+      const FormData = require('form-data');
+      const formData = new FormData();
+      formData.append('file', Buffer.from(imageResponse.data), 'image.jpg');
+
+      // Send to FastAPI /predict endpoint
+      const mlResponse = await axios.post(
+        `${process.env.AI_SERVICE_URL}/predict`,
+        formData,
+        {
+          headers: formData.getHeaders(),
+          timeout: process.env.AI_SERVICE_TIMEOUT || 30000,
+          responseType: 'arraybuffer'
+        }
+      );
+
+      // Extract result from header
+      mlResult = mlResponse.headers['x-detection-result'] || null;
+
+      // Convert processed image to base64 URL
+      if (mlResponse.data) {
+        const base64Image = Buffer.from(mlResponse.data).toString('base64');
+        mlImage = `data:image/jpeg;base64,${base64Image}`;
+      }
+
+      console.log('ML processing successful:', { mlResult });
+    } catch (mlError) {
+      console.log('ML Service unavailable, proceeding without ML processing:', mlError.message);
     }
 
     // Call AI microservice to classify the image
@@ -61,6 +137,8 @@ exports.submitComplaint = async (req, res, next) => {
     const complaint = new Complaint({
       userId,
       imageUrl,
+      mlImage,
+      mlResult,
       description,
       category,
       aiCategory,
@@ -101,8 +179,8 @@ exports.getComplaints = async (req, res, next) => {
   try {
     const { category, status, priority, page = 1, limit = 10 } = req.query;
 
-    // Build filter object
-    const filter = {};
+    // Build filter object - exclude archived complaints
+    const filter = { archivedByAdmin: { $ne: true } };
     if (category) filter.category = category;
     if (status) filter.status = status;
     if (priority) filter.priority = priority;
@@ -271,12 +349,13 @@ exports.getMyComplaints = async (req, res, next) => {
 
     const skip = (page - 1) * limit;
 
-    const complaints = await Complaint.find({ userId })
+    // Exclude user-deleted complaints from their view
+    const complaints = await Complaint.find({ userId, deletedByUser: { $ne: true } })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit));
 
-    const total = await Complaint.countDocuments({ userId });
+    const total = await Complaint.countDocuments({ userId, deletedByUser: { $ne: true } });
 
     res.status(200).json({
       success: true,
@@ -406,6 +485,55 @@ exports.sendAppreciationEmail = async (req, res, next) => {
     res.status(500).json({
       success: false,
       message: 'Failed to send appreciation email',
+      error: error.message
+    });
+  }
+};
+
+// Delete a complaint (User can delete their own)
+exports.deleteComplaint = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+
+    // Find complaint
+    const complaint = await Complaint.findById(id);
+    if (!complaint) {
+      return res.status(404).json({
+        success: false,
+        message: 'Complaint not found'
+      });
+    }
+
+    // Check if user owns this complaint
+    if (complaint.userId.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'You can only delete your own complaints'
+      });
+    }
+
+    // If already archived by admin, permanently delete
+    if (complaint.archivedByAdmin) {
+      await Complaint.findByIdAndDelete(id);
+      return res.status(200).json({
+        success: true,
+        message: 'Complaint permanently deleted'
+      });
+    }
+
+    // Otherwise just archive it
+    await Complaint.findByIdAndUpdate(id, { deletedByUser: true });
+
+    res.status(200).json({
+      success: true,
+      message: 'Complaint deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete complaint error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete complaint',
       error: error.message
     });
   }

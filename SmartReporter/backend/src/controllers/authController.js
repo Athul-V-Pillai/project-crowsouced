@@ -64,6 +64,34 @@ exports.login = async (req, res, next) => {
         message: "Invalid credentials"
       });
     }
+
+    // Check if user is banned or suspended
+    if (user.status === "banned") {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been banned. Reason: " + (user.bannedReason || "No reason provided")
+      });
+    }
+
+    // Check if suspension has expired - auto-unsuspend
+    if (user.status === "suspended") {
+      if (user.suspensionExpiresAt && new Date() >= new Date(user.suspensionExpiresAt)) {
+        // Suspension expired, auto-unsuspend
+        user.status = "active";
+        user.suspensionExpiresAt = null;
+        user.bannedReason = null;
+        user.bannedAt = null;
+        await user.save();
+      } else {
+        // Still suspended
+        const remainingTime = user.suspensionExpiresAt ? Math.ceil((new Date(user.suspensionExpiresAt) - new Date()) / 1000 / 60) : 0; // in minutes
+        return res.status(403).json({
+          success: false,
+          message: `Your account has been suspended. Reason: ${user.bannedReason || "No reason provided"}. Remaining suspension time: ${Math.floor(remainingTime / 60)}h ${remainingTime % 60}m`
+        });
+      }
+    }
+
     const isMatch = await user.matchPassword(password);
     if (!isMatch) {
       return res.status(400).json({

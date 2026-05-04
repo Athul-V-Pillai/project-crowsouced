@@ -23,8 +23,11 @@ export const HomePage = () => {
             {isAuthenticated ? (
               <>
                 <Link to="/complaints" className="text-blue-600 hover:text-blue-800 font-semibold">Complaints</Link>
-                <Link to="/user/complaints" className="text-blue-600 hover:text-blue-800 font-semibold">My Complaints</Link>
-                <Link to="/submit" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Report Issue</Link>
+                {user?.role !== 'admin' && (
+                  <>
+                    <Link to="/user/complaints" className="text-blue-600 hover:text-blue-800 font-semibold">My Complaints</Link>
+                  </>
+                )}
                 {user?.role === 'admin' && (
                   <Link to="/admin/dashboard" className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">Admin</Link>
                 )}
@@ -61,11 +64,11 @@ export const HomePage = () => {
           <Link to="/auth" className="bg-white text-blue-600 px-8 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 inline-block">
             Get Started
           </Link>
-        ) : (
+        ) : user?.role !== 'admin' ? (
           <Link to="/submit" className="bg-white text-blue-600 px-8 py-3 rounded-lg font-bold text-lg hover:bg-gray-100 inline-block">
             Report an Issue
           </Link>
-        )}
+        ) : null}
 
         {/* Features */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">

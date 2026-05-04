@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
     status: { type: String, enum: ["active", "banned", "suspended"], default: "active" },
     bannedReason: { type: String, default: null },
     bannedAt: { type: Date, default: null },
+    suspensionExpiresAt: { type: Date, default: null },
     resetOTP: { type: String, default: null },
     resetOTPExpires: { type: Date, default: null },
     resetOTPVerified: { type: Boolean, default: false }

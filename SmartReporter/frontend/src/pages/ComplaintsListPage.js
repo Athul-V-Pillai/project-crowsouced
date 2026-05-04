@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getComplaints, upvoteComplaint } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import { FiThumbsUp, FiMapPin, FiCalendar } from 'react-icons/fi';
 
 export const ComplaintsListPage = () => {
+  const { user } = useAuth();
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
@@ -143,12 +145,14 @@ export const ComplaintsListPage = () => {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleUpvote(complaint._id)}
-                    className="w-full flex items-center justify-center bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
-                  >
-                    <FiThumbsUp className="mr-2" /> Upvote ({complaint.upvotes})
-                  </button>
+                  {user?.role !== 'admin' && (
+                    <button
+                      onClick={() => handleUpvote(complaint._id)}
+                      className="w-full flex items-center justify-center bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition font-semibold"
+                    >
+                      <FiThumbsUp className="mr-2" /> Upvote ({complaint.upvotes})
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
