@@ -2,6 +2,8 @@
 
 A complete MERN stack application for reporting and resolving local civic issues through crowdsourcing.
 
+**GitHub Repository:** [https://github.com/Athul-V-Pillai/project-crowsouced](https://github.com/Athul-V-Pillai/project-crowsouced)
+
 ## 🚀 Features
 
 ### User (Citizen) Module
@@ -100,11 +102,238 @@ SmartReporter/
 - Axios for HTTP requests
 
 ### AI Service
-- Python Flask
+- Python Flask / FastAPI
 - YOLOv5 for object detection
 - PyTorch
 - OpenCV
 - Requests library
+
+## 🏗️ Architecture
+
+### System Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Frontend Layer                            │
+│              React 18 + Tailwind CSS                        │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Pages: Home, Auth, Submit, List, Admin, Map        │  │
+│  │  Components: Modal, Cards, Forms, Charts            │  │
+│  │  Context: Auth, State Management                    │  │
+│  │  Services: API Client (Axios)                       │  │
+│  └──────────────────────────────────────────────────────┘  │
+└──────────────┬──────────────────────────────────────────────┘
+               │ REST API (JSON)
+               │ HTTPS/CORS
+               ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 Backend Layer                               │
+│           Node.js + Express.js                              │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Routes:                                             │  │
+│  │  ├─ /api/auth        (Registration, Login)          │  │
+│  │  ├─ /api/complaints  (CRUD operations)              │  │
+│  │  └─ /api/admin       (Admin operations)             │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Controllers:                                        │  │
+│  │  ├─ authController   (User authentication)          │  │
+│  │  ├─ complaintController (Complaint management)      │  │
+│  │  └─ adminController  (Admin functions)              │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Middleware:                                         │  │
+│  │  ├─ auth.js         (JWT verification)              │  │
+│  │  └─ errorHandler.js (Error handling)                │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Utilities:                                          │  │
+│  │  ├─ cloudinary.js   (Image upload)                  │  │
+│  │  ├─ jwt.js          (Token generation)              │  │
+│  │  ├─ mail.js         (Email service)                 │  │
+│  │  └─ complaintMail.js (Notification emails)          │  │
+│  └──────────────────────────────────────────────────────┘  │
+└──────┬──────────────────┬──────────────────┬────────────────┘
+       │                  │                  │
+       ▼                  ▼                  ▼
+┌──────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│   MongoDB    │  │   Cloudinary     │  │  FastAPI / Flask │
+│    Atlas     │  │  (Image Hosting) │  │  (AI Service)    │
+│              │  │                  │  │                  │
+│ Collections: │  │ - Image Upload   │  │ - YOLO Model     │
+│ - Users      │  │ - URL Storage    │  │ - Detection      │
+│ - Complaints │  │ - Optimization   │  │ - Classification │
+│ - Upvotes    │  │ - CDN Delivery   │  │ - Confidence     │
+└──────────────┘  └──────────────────┘  └──────────────────┘
+```
+
+### Three-Tier Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│         PRESENTATION LAYER (Frontend)                  │
+│  - React Components                                     │
+│  - User Interface                                       │
+│  - Client-side Routing                                 │
+│  - State Management (Context API)                      │
+└────────────────────┬────────────────────────────────────┘
+                     │ HTTP/REST API
+                     ▼
+┌─────────────────────────────────────────────────────────┐
+│       BUSINESS LOGIC LAYER (Backend)                   │
+│  - Express Routes & Controllers                        │
+│  - Authentication & Authorization                      │
+│  - Data Validation & Processing                        │
+│  - Microservice Orchestration                          │
+│  - Email & Notification Services                       │
+└────────────────────┬────────────────────────────────────┘
+                     │
+         ┌───────────┼───────────┐
+         ▼           ▼           ▼
+    ┌─────────┐ ┌──────────┐ ┌────────┐
+    │ MongoDB │ │Cloudinary│ │FastAPI │
+    │ (Data)  │ │(Storage) │ │(AI/ML) │
+    └─────────┘ └──────────┘ └────────┘
+```
+
+### Component Relationships
+
+```
+User (Frontend)
+     │
+     ├─→ AuthPage ────→ authController ─→ User Model ─→ MongoDB
+     │
+     ├─→ SubmitComplaintPage
+     │        │
+     │        ├─→ complaintController ─→ Complaint Model ─→ MongoDB
+     │        ├─→ Cloudinary ─→ Image Storage
+     │        └─→ AI Service (FastAPI/Flask) ─→ YOLO Detection
+     │
+     ├─→ ComplaintsListPage ─→ Get all complaints ─→ MongoDB
+     │        │
+     │        └─→ Upvote System ─→ Upvote Model ─→ MongoDB
+     │
+     └─→ AdminDashboard
+              │
+              ├─→ adminController
+              ├─→ Dashboard Stats
+              ├─→ User Management
+              ├─→ Map Visualization
+              └─→ Complaint Resolution
+
+Admin
+     │
+     └─→ Admin Login ─→ adminController ─→ RBAC Check ─→ Admin Dashboard
+```
+
+### Data Flow Diagram
+
+```
+1. USER SUBMITS COMPLAINT
+   ┌──────────┐
+   │  Browser │
+   └─────┬────┘
+         │ Form Data + Image
+         ▼
+   ┌──────────────┐
+   │   Frontend   │
+   └─────┬────────┘
+         │ POST /api/complaints/submit
+         ▼
+   ┌──────────────┐
+   │   Backend    │
+   └─────┬────────┘
+         │
+         ├─→ Upload Image ─→ Cloudinary ─→ Get URL
+         │
+         ├─→ Call AI Service ─→ FastAPI/Flask ─→ YOLO ─→ Detections
+         │
+         └─→ Save Complaint ─→ MongoDB (with AI results)
+              │
+              └─→ Send Email Notification ─→ Gmail SMTP
+
+2. ADMIN VIEWS DASHBOARD
+   ┌──────────┐
+   │  Browser │
+   └─────┬────┘
+         │ GET /api/admin/dashboard/stats
+         ▼
+   ┌──────────────┐
+   │   Backend    │
+   └─────┬────────┘
+         │
+         └─→ Query MongoDB ─→ Return Stats & Recent Complaints
+              │
+              └─→ Display on AdminDashboard
+
+3. AI IMAGE PROCESSING
+   ┌──────────────┐
+   │   Image URL  │
+   └─────┬────────┘
+         │
+         ▼
+   ┌──────────────┐
+   │  Cloudinary  │ ◄─── Fetches image
+   └─────┬────────┘
+         │
+         ▼
+   ┌──────────────┐
+   │  FastAPI     │
+   │  ┌────────┐  │
+   │  │ YOLO   │  │ ◄─── Loads pretrained model
+   │  │ Model  │  │
+   │  └────┬───┘  │
+   │       │      │
+   │  ┌────▼────┐ │
+   │  │Inference│ │ ◄─── Detects objects
+   │  └────┬────┘ │
+   │       │      │
+   │  ┌────▼────────────┐ │
+   │  │Process Image &  │ │
+   │  │Extract Results  │ │
+   │  └────┬────────────┘ │
+   └─────┬─┘
+         │
+         ▼
+   ┌──────────────────────┐
+   │ Return Detection JSON│
+   │ - Category           │
+   │ - Confidence Score   │
+   │ - Bounding Boxes     │
+   │ - Processed Image    │
+   └──────────────────────┘
+```
+
+### Technology Stack Interaction
+
+```
+                    ┌─────────────────┐
+                    │  Google Colab   │
+                    │  (Optional GPU) │
+                    └────────┬────────┘
+                             │
+                             ▼
+    ┌────────────────────────────────────────────┐
+    │          Frontend (React 18)                │
+    │  HTML5 │ CSS3 │ JavaScript │ Tailwind CSS │
+    │          Axios │ React Router │ Context API│
+    └────────┬────────────────────────────────────┘
+             │
+    ┌────────▼────────────────────────────────────┐
+    │      Backend (Node.js + Express)            │
+    │  JavaScript │ ES6+ │ Middleware Pattern     │
+    │  JWT │ Bcryptjs │ Mongoose │ Cors          │
+    └────────┬────────────────────────────────────┘
+             │
+    ┌────────┴───────────┬──────────────┬────────────┐
+    │                    │              │            │
+    ▼                    ▼              ▼            ▼
+┌─────────┐        ┌──────────┐  ┌──────────┐  ┌──────────┐
+│MongoDB  │        │Cloudinary│  │Gmail     │  │FastAPI   │
+│NoSQL DB │        │Image CDN │  │SMTP      │  │AI Model  │
+│Atlas    │        │Storage   │  │Email     │  │YOLO v5   │
+└─────────┘        └──────────┘  └──────────┘  └──────────┘
+```
 
 ## 🚦 Getting Started
 
