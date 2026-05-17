@@ -36,7 +36,7 @@ A complete MERN stack application for reporting and resolving local civic issues
 **Tech Stack:**
 - **Frontend:** React 18, Tailwind CSS, React Router
 - **Backend:** Node.js, Express.js, MongoDB
-- **AI Service:** Python, FastAPI, YOLO v5
+- **AI Service:** Python, FastAPI, YOLO v8
 - **Cloud:** Google Colab, Cloudinary, Gmail SMTP
 
 **Quick Links:**
@@ -111,7 +111,7 @@ docker-compose up -d
 ### AI Service
 - Python
 - FastAPI
-- YOLO v5
+- YOLO v8
 - PyTorch
 
 ### Cloud Services
