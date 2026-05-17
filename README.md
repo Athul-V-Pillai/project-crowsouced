@@ -27,7 +27,7 @@ A complete MERN stack application for reporting and resolving local civic issues
 - ✅ User registration & complaint submission
 - ✅ Real-time camera integration for image capture
 - ✅ GPS-based location detection
-- ✅ AI-powered issue classification (YOLO v5)
+- ✅ AI-powered issue classification (YOLO v8)
 - ✅ Admin dashboard with analytics
 - ✅ Interactive map visualization
 - ✅ Community upvote system
@@ -36,7 +36,7 @@ A complete MERN stack application for reporting and resolving local civic issues
 **Tech Stack:**
 - **Frontend:** React 18, Tailwind CSS, React Router
 - **Backend:** Node.js, Express.js, MongoDB
-- **AI Service:** Python, FastAPI, YOLO v5
+- **AI Service:** Python, FastAPI, YOLO v8
 - **Cloud:** Google Colab, Cloudinary, Gmail SMTP
 
 **Quick Links:**
@@ -84,7 +84,6 @@ docker-compose up -d
 # Access:
 # Frontend: http://localhost:3000
 # Backend: http://localhost:5000/api
-# AI Service: http://localhost:5001
 ```
 
 ### Option 3: Google Colab AI Service
@@ -111,7 +110,7 @@ docker-compose up -d
 ### AI Service
 - Python
 - FastAPI
-- YOLO v5
+- YOLO v8
 - PyTorch
 
 ### Cloud Services
